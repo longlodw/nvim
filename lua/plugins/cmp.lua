@@ -62,17 +62,17 @@ return {
 
     local servers = {
       -- clangd = {},
-      gopls = {filetypes ={ 'go'}},
-      pyright = {},
-      jdtls = { filetypes = {'java'}},
+      -- gopls = {filetypes ={ 'go'}},
+      -- pyright = {},
+      -- jdtls = { filetypes = {'java'}},
       -- pylsp = {},
       -- rust_analyzer = {},
       -- tsserver = {},
-      omnisharp = { filetypes = {'cs'} },
+      -- omnisharp = { filetypes = {'cs'} },
       -- ltex_ls = {filetypes = {'tex'}},
-      html = { filetypes = { 'html', 'twig', 'hbs'} },
-      sqlls = {filetypes = {'sql', 'tsql'} },
-      bufls = { filetypes = {'proto'} },
+      -- html = { filetypes = { 'html', 'twig', 'hbs'} },
+      -- sqlls = {filetypes = {'sql', 'tsql'} },
+      -- bufls = { filetypes = {'proto'} },
 
       lua_ls = {
         Lua = {
