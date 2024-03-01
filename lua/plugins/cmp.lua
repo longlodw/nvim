@@ -63,8 +63,8 @@ return {
     local servers = {
       -- clangd = {},
       -- gopls = {filetypes ={ 'go'}},
-      pyright = {},
-      -- jdtls = { filetypes = {'java'}},
+      -- pyright = {},
+      jdtls = { filetypes = {'java'}},
       -- pylsp = {},
       -- rust_analyzer = {},
       -- tsserver = {},
