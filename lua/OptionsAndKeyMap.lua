@@ -66,6 +66,5 @@ vim.keymap.set('i', '[', '[]<Left>')
 vim.keymap.set('i', '{', '{}<Left>')
 vim.keymap.set('i', "'", "''<Left>")
 vim.keymap.set('i', '"', '""<Left>')
-vim.keymap.set('i', "\\(", "\\(\\)<Left><Left>")
 
 vim.keymap.set('t', '<esc>', [[<C-\><C-n>]])

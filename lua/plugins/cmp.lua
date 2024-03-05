@@ -61,7 +61,7 @@ return {
     end
 
     local servers = {
-      -- clangd = {},
+      clangd = {},
       -- gopls = {filetypes ={ 'go'}},
       -- pyright = {},
       -- jdtls = { filetypes = {'java'}},
