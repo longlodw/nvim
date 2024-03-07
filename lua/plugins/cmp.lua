@@ -60,8 +60,21 @@ return {
       end, { desc = 'Format current buffer with LSP' })
     end
 
+    local function shell(command)
+      local handle = io.popen(command)
+      if handle == nil then
+        return nil
+      end
+      local result = handle:read("*a")
+      handle:close()
+      return result
+    end
+
     local servers = {
-      clangd = {},
+      clangd = {
+        filetypes = {'h', 'hpp', 'c', 'cpp'},
+        cmd = {'clangd', "--query-driver=" .. string.gsub(shell('which c++'), '[\n\r]', '')}
+      },
       -- gopls = {filetypes ={ 'go'}},
       -- pyright = {},
       -- jdtls = { filetypes = {'java'}},
@@ -103,6 +116,7 @@ return {
           on_attach = on_attach,
           settings = servers[server_name],
           filetypes = (servers[server_name] or {}).filetypes,
+          cmd = (servers[server_name] or {}).cmd,
         }
       end
     }
