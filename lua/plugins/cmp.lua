@@ -71,7 +71,7 @@ return {
       -- omnisharp = { filetypes = {'cs'} },
       -- ltex_ls = {filetypes = {'tex'}},
       -- html = { filetypes = { 'html', 'twig', 'hbs'} },
-      -- sqlls = {filetypes = {'sql', 'tsql'} },
+      sqlls = {},
       -- bufls = { filetypes = {'proto'} },
 
       lua_ls = {
