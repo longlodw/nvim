@@ -76,7 +76,7 @@ return {
         cmd = {'clangd', "--query-driver=" .. string.gsub(shell('which c++'), '[\n\r]', '')}
       },
       -- gopls = {filetypes ={ 'go'}},
-      -- pyright = {},
+      pyright = {},
       -- jdtls = { filetypes = {'java'}},
       -- pylsp = {},
       -- rust_analyzer = {},
