@@ -17,7 +17,8 @@ return {
 
       highlight = {
         enable = true,
-        additional_vim_regex_highlighting = false
+        disable = { "latex" },
+        additional_vim_regex_highlighting = { "latex" }
       },
       indent = { enable = true },
       incremental_selection = {
