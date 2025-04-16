@@ -175,6 +175,7 @@ vim.o.guicursor = 'a:blinkon500-blinkoff500,n-v-c:block,i-ci-ve:ver25,r-cr:hor20
 vim.o.confirm = true
 
 vim.o.hlsearch = true
+vim.o.guicursor = 'a:blinkon500-blinkoff500'
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
