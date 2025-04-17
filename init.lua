@@ -163,7 +163,7 @@ vim.opt.cursorline = true
 vim.opt.scrolloff = 10
 
 vim.o.hlsearch = true
-vim.o.guicursor = 'a:blinkon500-blinkoff500'
+vim.o.guicursor = 'a:blinkon500-blinkoff500,n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50'
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
