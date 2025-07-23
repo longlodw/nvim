@@ -174,6 +174,8 @@ vim.o.guicursor = 'a:blinkon500-blinkoff500,n-v-c:block,i-ci-ve:ver25,r-cr:hor20
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+vim.o.hlsearch = false
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
