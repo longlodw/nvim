@@ -742,10 +742,23 @@ require('lazy').setup({
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for ts_ls)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
+            vim.lsp.config(server_name, server)
           end,
         },
       }
+      -- None Mason LSP servers can be setup here.
+      local other_servers = {
+        dartls = {},
+        metals = {
+          -- Example showing how to change the default filetypes
+          filetypes = { 'scala', 'sbt', 'java' },
+        },
+      }
+      for server_name, server in pairs(other_servers) do
+        server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+        vim.lsp.config(server_name, server)
+        vim.lsp.enable(server_name)
+      end
     end,
   },
 
