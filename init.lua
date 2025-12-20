@@ -122,7 +122,7 @@ vim.opt.autoindent = true
 vim.opt.expandtab = true
 vim.opt.shiftwidth = 2
 vim.opt.smarttab = true
-vim.opt.tabstop = 8
+vim.opt.tabstop = 4
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -174,6 +174,7 @@ vim.o.confirm = true
 
 vim.o.hlsearch = true
 vim.o.guicursor = 'a:blinkon500-blinkoff500,n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50'
+vim.o.winborder = 'rounded'
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -683,7 +684,7 @@ require('lazy').setup({
         clangd = {},
         gopls = {},
         pyright = {},
-        rust_analyzer = {},
+        -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -693,7 +694,8 @@ require('lazy').setup({
         ts_ls = {},
         --
 
-        jdtls = {},
+        -- jdtls = {},
+
         lemminx = {},
         html = { filetypes = { 'html', 'twig', 'hbs' } },
         sqlls = { filetypes = { 'sql', 'tsql' } },
@@ -748,11 +750,16 @@ require('lazy').setup({
       }
       -- None Mason LSP servers can be setup here.
       local other_servers = {
+        --[[
         dartls = {},
         metals = {
           -- Example showing how to change the default filetypes
           filetypes = { 'scala', 'sbt', 'java' },
         },
+        gleam = {
+          filetypes = { 'gleam' },
+        },
+        ]]
       }
       for server_name, server in pairs(other_servers) do
         server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
