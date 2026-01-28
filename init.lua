@@ -229,6 +229,123 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- [[ Built-in Treesitter Configuration ]]
+-- Use Neovim's bundled treesitter parsers (statically compiled, no glibc dependency)
+-- Bundled in Neovim 0.10+: c, lua, vim, vimdoc, query, markdown, markdown_inline, bash
+vim.api.nvim_create_autocmd('FileType', {
+  desc = 'Enable built-in treesitter highlighting for bundled parsers',
+  group = vim.api.nvim_create_augroup('builtin-treesitter', { clear = true }),
+  pattern = { 'c', 'cpp', 'lua', 'vim', 'vimdoc', 'query', 'markdown', 'bash', 'sh' },
+  callback = function()
+    -- Enable treesitter highlighting (uses bundled parsers)
+    pcall(vim.treesitter.start)
+  end,
+})
+
+-- [[ LSP Semantic Tokens ]]
+-- For languages with LSP support (Python, TypeScript, Rust, Go, etc.),
+-- semantic tokens provide rich highlighting based on language understanding.
+-- Explicitly enable semantic tokens on LspAttach for better compatibility.
+vim.api.nvim_create_autocmd('LspAttach', {
+  desc = 'Enable LSP semantic tokens highlighting',
+  group = vim.api.nvim_create_augroup('lsp-semantic-tokens', { clear = true }),
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client and client.server_capabilities.semanticTokensProvider then
+      -- Use vim.schedule to ensure the LSP is fully initialized
+      vim.schedule(function()
+        vim.lsp.semantic_tokens.start(args.buf, args.data.client_id)
+      end)
+    end
+  end,
+})
+
+-- Helper command to check highlighting source under cursor
+vim.api.nvim_create_user_command('HighlightSource', function()
+  -- Check semantic tokens
+  local ok, tokens = pcall(vim.lsp.semantic_tokens.get_at_pos)
+  if ok and tokens and #tokens > 0 then
+    print 'Semantic tokens active:'
+    for _, token in ipairs(tokens) do
+      print(string.format('  %s (%s)', token.type, token.modifiers and table.concat(token.modifiers, ', ') or ''))
+    end
+  else
+    print 'No semantic tokens at cursor'
+  end
+  -- Show LSP clients with semantic token support
+  local clients = vim.lsp.get_clients { bufnr = 0 }
+  for _, client in ipairs(clients) do
+    local st_provider = client.server_capabilities.semanticTokensProvider
+    if st_provider then
+      print(string.format('LSP %s: semantic tokens SUPPORTED', client.name))
+      print(string.format('  Full: %s, Range: %s', st_provider.full and 'yes' or 'no', st_provider.range and 'yes' or 'no'))
+    else
+      print(string.format('LSP %s: semantic tokens NOT supported', client.name))
+    end
+  end
+  -- Check if semantic tokens are actually active for this buffer
+  local bufnr = vim.api.nvim_get_current_buf()
+  local highlighter = vim.lsp.semantic_tokens.__STHighlighter
+  if highlighter and highlighter.active and highlighter.active[bufnr] then
+    print 'Semantic token highlighter: ACTIVE for this buffer'
+  else
+    print 'Semantic token highlighter: NOT active for this buffer'
+  end
+  print 'Tip: Use :Inspect to see all highlight groups at cursor'
+end, { desc = 'Show highlighting source at cursor' })
+
+-- Command to force refresh semantic tokens
+vim.api.nvim_create_user_command('SemanticTokensRefresh', function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local clients = vim.lsp.get_clients { bufnr = bufnr }
+  for _, client in ipairs(clients) do
+    if client.server_capabilities.semanticTokensProvider then
+      vim.lsp.semantic_tokens.force_refresh(bufnr)
+      print('Refreshed semantic tokens for ' .. client.name)
+      return
+    end
+  end
+  print 'No LSP with semantic token support attached'
+end, { desc = 'Force refresh semantic tokens' })
+
+-- Debug command to check LSP settings
+vim.api.nvim_create_user_command('LspSettings', function()
+  local clients = vim.lsp.get_clients { bufnr = 0 }
+  for _, client in ipairs(clients) do
+    print(string.format('=== %s ===', client.name))
+    print('Config settings: ' .. vim.inspect(client.config.settings or {}))
+    -- Also check the resolved config
+    local resolved = vim.lsp.config[client.name]
+    if resolved then
+      print('vim.lsp.config settings: ' .. vim.inspect(resolved.settings or {}))
+    end
+  end
+end, { desc = 'Show LSP client settings' })
+
+-- Debug: manually request semantic tokens from LSP
+vim.api.nvim_create_user_command('SemanticTokensRequest', function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local clients = vim.lsp.get_clients { bufnr = bufnr }
+  for _, client in ipairs(clients) do
+    if client.server_capabilities.semanticTokensProvider then
+      print('Requesting semantic tokens from ' .. client.name .. '...')
+      local params = { textDocument = vim.lsp.util.make_text_document_params(bufnr) }
+      client.request('textDocument/semanticTokens/full', params, function(err, result)
+        if err then
+          print('Error: ' .. vim.inspect(err))
+        elseif result and result.data then
+          print('Received ' .. #result.data .. ' token data points')
+          print('First 20 values: ' .. vim.inspect(vim.list_slice(result.data, 1, 20)))
+        else
+          print('No tokens returned (result: ' .. vim.inspect(result) .. ')')
+        end
+      end, bufnr)
+      return
+    end
+  end
+  print 'No LSP with semantic token support'
+end, { desc = 'Manually request semantic tokens from LSP' })
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -633,6 +750,12 @@ require('lazy').setup({
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
           end
+
+          -- Use LSP for indentation when the '=' operator is used (formatexpr)
+          -- This provides better indentation than vim's built-in for languages with LSP support
+          if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_rangeFormatting, event.buf) then
+            vim.bo[event.buf].formatexpr = 'v:lua.vim.lsp.formatexpr()'
+          end
         end,
       })
 
@@ -671,6 +794,55 @@ require('lazy').setup({
       --  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
       local capabilities = require('blink.cmp').get_lsp_capabilities()
 
+      -- Explicitly enable semantic tokens in capabilities
+      capabilities.textDocument.semanticTokens = {
+        dynamicRegistration = false,
+        tokenTypes = {
+          'namespace',
+          'type',
+          'class',
+          'enum',
+          'interface',
+          'struct',
+          'typeParameter',
+          'parameter',
+          'variable',
+          'property',
+          'enumMember',
+          'event',
+          'function',
+          'method',
+          'macro',
+          'keyword',
+          'modifier',
+          'comment',
+          'string',
+          'number',
+          'regexp',
+          'operator',
+          'decorator',
+        },
+        tokenModifiers = {
+          'declaration',
+          'definition',
+          'readonly',
+          'static',
+          'deprecated',
+          'abstract',
+          'async',
+          'modification',
+          'documentation',
+          'defaultLibrary',
+        },
+        formats = { 'relative' },
+        requests = {
+          full = { delta = true },
+          range = false,
+        },
+        multilineTokenSupport = false,
+        overlappingTokenSupport = false,
+      }
+
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
       --
@@ -681,9 +853,32 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        clangd = {},
-        gopls = {},
-        pyright = {},
+        -- clangd = {},
+        gopls = {
+          settings = {
+            gopls = {
+              -- Enable semantic tokens for better syntax highlighting
+              semanticTokens = true,
+              -- Additional analysis settings for better code intelligence
+              analyses = {
+                unusedparams = true,
+                shadow = true,
+              },
+              staticcheck = true,
+            },
+          },
+        },
+        basedpyright = {
+          settings = {
+            basedpyright = {
+              analysis = {
+                typeCheckingMode = 'basic',
+                autoSearchPaths = true,
+                useLibraryCodeForTypes = true,
+              },
+            },
+          },
+        },
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -734,17 +929,20 @@ require('lazy').setup({
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
+      -- Configure all LSP servers using vim.lsp.config (Neovim 0.11+)
+      for server_name, server in pairs(servers) do
+        server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+        vim.lsp.config(server_name, server)
+      end
+
+      -- Setup mason-lspconfig to enable servers when they're installed
       require('mason-lspconfig').setup {
         ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
         automatic_installation = false,
         handlers = {
           function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            vim.lsp.config(server_name, server)
+            -- Enable the server (config was already set above if in servers table)
+            vim.lsp.enable(server_name)
           end,
         },
       }
@@ -922,12 +1120,35 @@ require('lazy').setup({
         styles = {
           comments = { italic = false }, -- Disable italics in comments
         },
+        on_highlights = function(hl, c)
+          -- Module/namespace - cyan to distinguish from other identifiers
+          hl['@lsp.type.namespace'] = { fg = c.cyan }
+          hl['@lsp.type.module'] = { fg = c.cyan }
+
+          -- Self keyword - magenta to stand out
+          hl['@lsp.type.selfKeyword'] = { fg = c.magenta }
+          hl['@lsp.type.selfParameter'] = { fg = c.magenta }
+
+          -- Python constants highlight group
+          hl['PythonConstant'] = { fg = c.orange }
+        end,
       }
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
       vim.cmd.colorscheme 'tokyonight-night'
+
+      -- Fix Python True/False/None highlighting (vim syntax groups them with functions)
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'python',
+        callback = function()
+          -- Use syntax match with high priority to override pythonBuiltin
+          vim.fn.matchadd('PythonConstant', [[\<True\>]], 100)
+          vim.fn.matchadd('PythonConstant', [[\<False\>]], 100)
+          vim.fn.matchadd('PythonConstant', [[\<None\>]], 100)
+        end,
+      })
     end,
   },
 
@@ -970,32 +1191,6 @@ require('lazy').setup({
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
-  },
-  { -- Highlight, edit, and navigate code
-    'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        disable = { 'latex' },
-        additional_vim_regex_highlighting = { 'ruby', 'latex' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
