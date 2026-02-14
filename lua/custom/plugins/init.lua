@@ -3,6 +3,29 @@
 --
 -- See the kickstart.nvim README for more information
 return {
-  'github/copilot.vim',
+  {
+    'zbirenbaum/copilot.lua',
+    cmd = 'Copilot',
+    event = 'InsertEnter',
+    config = function()
+      require('copilot').setup {
+        panel = {
+          enabled = false,
+        },
+        suggestion = {
+          enabled = true,
+          auto_trigger = true,
+          keymap = {
+            accept = '<Tab>',
+            accept_word = '<C-Right>',
+            accept_line = '<C-Down>',
+            next = '<M-]>',
+            prev = '<M-[>',
+            dismiss = '<Esc>',
+          },
+        },
+      }
+    end,
+  },
   'xiyaowong/transparent.nvim',
 }
