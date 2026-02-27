@@ -24,6 +24,11 @@ return {
             dismiss = '<Esc>',
           },
         },
+        filetype = {
+          ['*'] = true,
+          ['.'] = true,
+          markdown = true,
+        },
       }
     end,
   },
