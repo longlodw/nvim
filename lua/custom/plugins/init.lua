@@ -33,4 +33,5 @@ return {
     end,
   },
   'xiyaowong/transparent.nvim',
+  'tpope/vim-fugitive',
 }
