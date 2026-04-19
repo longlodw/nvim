@@ -254,7 +254,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
     if client and client.server_capabilities.semanticTokensProvider then
       -- Use vim.schedule to ensure the LSP is fully initialized
       vim.schedule(function()
-        vim.lsp.semantic_tokens.start(args.buf, args.data.client_id)
+        vim.lsp.semantic_tokens.enable(true, {})
       end)
     end
   end,
